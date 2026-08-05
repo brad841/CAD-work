@@ -25,6 +25,11 @@ from __future__ import annotations
 # load spreads into the coating instead of concentrating on a printed edge.
 # Negative: the liner is deliberately squeezed. This is the grip.
 LINER_TO_POLE = -0.8
+# TPU against powder-coated steel, dry. Deliberately the low end of the range
+# quoted for elastomer-on-painted-steel: a pessimistic mu drives the required
+# preload UP, which is the safe direction for "does not drop the speaker". It is
+# also the wet-and-cold value, which is the condition that actually matters here.
+LINER_FRICTION_COEFF = 0.45
 # How much thinner the liner runs where the weld seam passes, so the seam is
 # straddled rather than crushed. Added to POLE_SEAM_PROUD to size the groove.
 LINER_SEAM_RELIEF = 0.4

@@ -57,9 +57,9 @@ PETG = Material(
     glass_transition_c=80.0,
     sustained_knockdown=0.35,
     notes=(
-        "Floor, not the goal. Tg is adequate but PETG's creep resistance is "
-        "mediocre and it is the least forgiving of the three if a wall ends up "
-        "thin. Acceptable for the liner-adjacent and non-loaded parts."
+        "The declared floor, and the chosen build material. Tg is adequate but "
+        "creep resistance is mediocre, so loaded sections are scaled up rather "
+        "than left at ASA thickness. Not UV stable for a long exposure."
     ),
 )
 
@@ -103,29 +103,44 @@ TPU_95A = Material(
 )
 
 
+# The build material, chosen by the person printing it. PETG confirmed.
+#
+# PETG is the declared floor rather than the preference, so choosing it is not
+# free: its sustained knockdown is 0.35 against ASA's 0.45, and derived.py turns
+# that ratio into a thickness multiplier on every loaded section. The mount gets
+# heavier instead of weaker. It also means UV is unmanaged — PETG embrittles in
+# sustained sun, which is fine for an overnight and not fine for a season.
+CHOSEN = PETG
+CHOSEN_NOTES = (
+    "PETG. Loaded sections scaled by derived.wall_scale() to hold the same 5x "
+    "sustained margin ASA would have given at nominal thickness. Print hot and "
+    "slow for interlayer strength — PETG's layer bond is the whole game here, "
+    "and a fast cold PETG part is a delamination waiting for a hot afternoon."
+)
+
 # Per-part material and orientation. Orientation is a strength decision, so it
 # is specified here alongside the material rather than left to the slicer
 # operator. Rule: layer boundaries never normal to a principal tensile stress.
 PART_SPEC: dict[str, dict[str, str]] = {
     "clamp_shell_fixed": {
-        "material": "ASA",
+        "material": "PETG",
         "orientation": "Pole axis normal to the plate.",
         "why": "Puts hoop tension in-plane. Standing it the other way would run "
                "the clamping load straight across layer boundaries.",
     },
     "clamp_shell_swing": {
-        "material": "ASA",
+        "material": "PETG",
         "orientation": "Pole axis normal to the plate.",
         "why": "Same hoop path as the fixed half.",
     },
     "over_center_lever": {
-        "material": "PC-blend",
+        "material": "PETG",
         "orientation": "Lever flat on the plate, pivot axis vertical.",
         "why": "Bending is in-plane. This part is also visible jewelry, so the "
                "flat face against the plate becomes the show face.",
     },
     "lever_link": {
-        "material": "PC-blend",
+        "material": "PETG",
         "orientation": "Flat on the plate, both pin axes vertical.",
         "why": "Pure tension between two pins, held in-plane.",
     },
@@ -135,33 +150,55 @@ PART_SPEC: dict[str, dict[str, str]] = {
         "why": "Compression only; orientation chosen for print reliability.",
     },
     "boom_arm": {
-        "material": "PC-blend",
+        "material": "PETG",
         "orientation": "Long axis flat on the plate. Never standing up.",
         "why": "Axial tension and bending both in-plane. Standing it up would "
                "put the entire suspended load across layer boundaries — this is "
                "the single most orientation-critical part in the assembly.",
     },
     "tray": {
-        "material": "ASA",
+        "material": "PETG",
         "orientation": "Tray face down on the plate.",
         "why": "Show surface against glass, and tray bending stays in-plane.",
     },
     "rear_handle_hook": {
-        "material": "PC-blend",
+        "material": "PETG",
         "orientation": "Hook profile flat on the plate.",
         "why": "Loaded in shear across the hook throat; in-plane keeps the "
                "shear off layer boundaries.",
     },
     "bayonet_collar": {
-        "material": "ASA",
+        "material": "PETG",
         "orientation": "Bayonet axis normal to the plate.",
         "why": "Lug bearing faces come out as in-plane walls, and the slots "
                "print without bridging.",
     },
     "drip_canopy": {
-        "material": "ASA",
+        "material": "PETG",
         "orientation": "Canopy convex side up, apex highest.",
         "why": "No supports on the visible upper surface, and every internal "
                "overhang stays under the 50 deg limit.",
+    },
+    # --- Parts that exist because the pole and the speaker are unmeasured ---
+    "pole_shim": {
+        "material": "PETG",
+        "orientation": "Curved face flat on the plate, arc lying down.",
+        "why": "Pure compression between shell and liner, so orientation is a "
+               "print-quality choice rather than a strength one. Printed in a "
+               "0.5 / 1.0 / 1.5 mm set to cover the whole unconfirmed pole range.",
+    },
+    "hook_nose": {
+        "material": "TPU 95A",
+        "orientation": "Nose profile flat on the plate.",
+        "why": "The compliant face that meets the handle lip. TPU because the "
+               "lip radius is unpublished — the nose conforms to whatever is "
+               "actually there instead of matching a number we never got.",
+    },
+    "usbc_retainer": {
+        "material": "PETG",
+        "orientation": "Plug axis flat on the plate, capture jaws vertical.",
+        "why": "Module B. Carries no suspended load, only cable sway, so this is "
+               "a stiffness and water-shedding part. Jaws vertical keeps the "
+               "snap fingers' bending in-plane.",
     },
 }

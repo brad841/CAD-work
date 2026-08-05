@@ -1,7 +1,28 @@
 # Gate 0 — Measurement Protocol
 
-21 numbers. Nothing gets modelled until they exist. This document is how to
-produce them; `params/gate0.py` is where they go.
+> **Status update.** This document originally covered 21 blocking measurements.
+> After the pole turned out to be unconfirmable and the Move 2's handle and CoM
+> figures turned out to be genuinely unpublished, the gate was restructured.
+> What is still required, and what is now optional:
+>
+> | Section | Status |
+> |---|---|
+> | 1. Pole OD ×6 + seam | **Superseded.** Designed as a range (62.0–65.0 mm) with a printed shim set. Do not measure; shim at install. |
+> | 2. Pole wall + material | **Waived** by you as non-structural. Bounded to the thin/delicate case, which caps clamp pressure low and protects the pole. |
+> | 3. Handle recess ×4 | **Optional.** Bounded conservatively; the hook is compliant and adjustable so it works without them. Measuring sheds ~20–30 % conservatism. |
+> | 4. Charging base ×6 | **STILL REQUIRED.** Blocks Module A. No conservative direction exists — see below. |
+> | 5. CoM ×2 | **Optional.** Bounded to the adverse corner of the speaker's envelope. Measuring sheds mass. |
+>
+> Sections 3 and 5 are worth doing if you have ten minutes and a caliper.
+> Section 4 is the only one that blocks anything.
+>
+> **Why section 4 cannot be bounded:** every other unknown has a direction in
+> which being wrong is safe. A canopy does not. Guess the footprint too small and
+> water runs onto 15 V electronics that Sonos rates indoor only; guess it too
+> large and the canopy fouls the bayonet and the silhouette. There is no
+> conservative direction, so there is no honest bound, so it blocks.
+
+This document is how to produce each number; `params/gate0.py` is where they go.
 
 **Record everything in millimetres.** If you measure in inches, convert before
 writing (`in × 25.4`), and write the converted number only. The validator traps
