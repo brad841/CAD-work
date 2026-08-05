@@ -28,7 +28,22 @@ PART_MODULES = [
     "pole_gauge_coupon",
     "bayonet_coupon_male",
     "bayonet_coupon_female",
+    "pole_liner",
+    "clamp_shell_fixed",
+    "clamp_shell_swing",
 ]
+
+# Parts generated as a set from one module, with a per-variant argument.
+PART_SETS = [
+    ("pole_shim", [0.5, 1.0, 1.5]),
+]
+
+# How many of each go into one finished mount. Mass budget is per MOUNT, so a
+# part needed twice must be counted twice — reporting one liner when the clamp
+# needs two would understate the build by 36 g.
+QTY = {
+    "pole_liner": 2,
+}
 
 
 def main() -> int:
@@ -49,14 +64,30 @@ def main() -> int:
             print(f"  FAIL  {mod_name}: {e}")
             failed.append(mod_name)
 
+    for mod_name, variants in PART_SETS:
+        try:
+            mod = importlib.import_module(f"parts.{mod_name}")
+            for v in variants:
+                name = f"{mod.NAME}_{str(v).replace('.', 'p')}mm"
+                report = _base.export(mod.build(v), name, mod.MATERIAL)
+                reports.append(report)
+                print(f"  ok    {report.line()}")
+        except Exception as e:  # noqa: BLE001
+            print(f"  FAIL  {mod_name}: {e}")
+            failed.append(mod_name)
+
     print("-" * 74)
-    total = sum(r.mass_g for r in reports)
+    total = sum(r.mass_g * QTY.get(r.name, 1) for r in reports)
+    for name, n in QTY.items():
+        if any(r.name == name for r in reports):
+            print(f"  note  {name} counted x{n} — that many per mount")
     print(f"  {'TOTAL':<24} {'':<9} {total:>7.1f} g")
 
     # Coupons are consumables — they are printed, fitted and thrown away, so
     # they do not count against the mount's mass budget. Reported separately
     # rather than quietly excluded.
-    coupon_mass = sum(r.mass_g for r in reports if "coupon" in r.name)
+    coupon_mass = sum(r.mass_g * QTY.get(r.name, 1)
+                      for r in reports if "coupon" in r.name)
     mount_mass = total - coupon_mass
     print(f"  {'of which coupons':<24} {'':<9} {coupon_mass:>7.1f} g  (consumable)")
     print(f"  {'mount parts':<24} {'':<9} {mount_mass:>7.1f} g  "

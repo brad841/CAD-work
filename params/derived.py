@@ -40,6 +40,7 @@ class Derived:
     pole_range: float
 
     # Clamp
+    liner_id_free: float
     liner_thickness: float
     shell_bore_d: float
     shim_stack_needed_min: float
@@ -96,6 +97,11 @@ def compute(material: M.Material = M.PETG) -> Derived:
     # --- Clamp geometry, valid at both ends of the range -------------------
     liner_thickness = 3.0 + G.POLE_SEAM_PROUD + C.LINER_SEAM_RELIEF
 
+    # Liner free-state bore, sized to the SMALL end of the pole range so it is
+    # preloaded even on the thinnest pole in the design range. LINER_TO_POLE is
+    # negative — that interference is the grip.
+    liner_id_free = od_min + C.LINER_TO_POLE
+
     # The shell bore is set by the LARGEST pole it must close on. A smaller pole
     # is brought up to this bore by shims, never by over-squeezing the liner.
     shell_bore_d = od_max + C.SHELL_BORE_TO_POLE_OPEN + 2.0 * liner_thickness
@@ -123,10 +129,19 @@ def compute(material: M.Material = M.PETG) -> Derived:
 
     overturning_moment = load_n * boom_length
 
-    # The clamp resists that moment as a couple over the band height. With the
-    # pole wall bounded THIN, band height is driven by keeping contact pressure
-    # under what powder coat tolerates, not by strength.
-    clamp_band_height = max(70.0, boom_length * 0.55, 88.0)
+    # The clamp resists that moment as a couple over the band height.
+    #
+    # An 88 mm floor used to sit in this max() from when contact pressure was
+    # (wrongly) sized off the couple and looked like it governed. With pressure
+    # computed properly it comes out ~20x under the powder-coat limit, so band
+    # height buys almost nothing for pole protection and the floor was just
+    # carrying mass — 88 mm of TPU liner, twice over.
+    #
+    # What actually sets it is the couple arm's ratio to the boom lever: a band
+    # much shorter than the boom is long makes the shells splay rather than bear.
+    # 0.55 of boom length is that relationship, and the 70 mm floor keeps the
+    # clamp reading as a wrapped sleeve rather than a narrow ring.
+    clamp_band_height = max(70.0, boom_length * 0.55)
     clamp_couple_arm = clamp_band_height * 0.72
     clamp_couple_n = overturning_moment / clamp_couple_arm
 
@@ -179,6 +194,7 @@ def compute(material: M.Material = M.PETG) -> Derived:
         pole_od_min=od_min,
         pole_od_max=od_max,
         pole_range=pole_range,
+        liner_id_free=liner_id_free,
         liner_thickness=liner_thickness,
         shell_bore_d=shell_bore_d,
         shim_stack_needed_min=shim_stack_needed_min,
