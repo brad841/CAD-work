@@ -1,145 +1,123 @@
 # Sonos Move 2 — 2.5 in tent pole mount
 
-Suspended Move 2 with the factory charging base integrated. Over-centre wrap
-clamp into a 15° bayonet cradle. No adhesive, no drilling, no tools, teardown
-under 30 s.
+Suspended Move 2, over-centre wrap clamp into a 15° bayonet cradle. No adhesive,
+no drilling, no tools, teardown under 30 s.
 
-## Status: core mount CLEAR to generate. Module A gated on 6 numbers.
+## Status
+
+**Geometry complete for the core mount and Module B. Failure gauntlet passes.
+Module A (drip canopy) is still blocked. Mass is 485 g against a 400 g budget.**
 
 ```bash
 python3 -m venv .venv && .venv/bin/python -m pip install build123d
-.venv/bin/python scripts/validate_params.py    # exit 0, prints the full load path
-.venv/bin/python tests/test_gate0.py           # 69 checks, all passing
+
+.venv/bin/python scripts/validate_params.py     # gate + bounds report
+.venv/bin/python tests/test_gate0.py            # 69 checks
+.venv/bin/python scripts/check_bayonet_fit.py   # 12 checks, tolerance both ways
+.venv/bin/python scripts/check_clamp_fit.py     # 8 checks
+.venv/bin/python scripts/assemble.py            # clash check + merged STEP
+.venv/bin/python scripts/gauntlet.py            # failure critic
+.venv/bin/python scripts/build_all.py           # all parts + mass (fails on budget)
 ```
 
-Material: **PETG**, confirmed. Toolchain: build123d 0.11.1, STEP export verified.
+All exit 0 except `build_all`, which fails on the mass budget — deliberately, see
+below. Deliverables land in `out/`: STEP + STL per part, plus `assembly.step`.
 
-## How the gate works now
+## Gauntlet result
 
-Gate 0 originally demanded 21 measurements or nothing. Two of those turned out
-to be unobtainable — the pole is rented and unconfirmable, and the Move 2's
-handle and CoM figures are genuinely unpublished. So the gate now sorts numbers
-into three kinds, and only one of them blocks:
+**PASS.** Weakest link: **lever ear bearing** in `clamp_shell_swing` at **1.65×**
+on the derated allowable — 8.3× on the underlying material strength, since the
+allowable already carries the 5× creep factor.
 
-| Kind | Meaning | Blocks? |
-|---|---|---|
-| `MEASURED(x)` | Someone put a caliper on it. | — |
-| `BOUNDED(x)` | Not measured. A conservative substitute chosen so that being wrong makes the mount **stronger or looser**, never weaker or tighter. Every one records *why* it is safe and *what the conservatism costs*. | No |
-| `UNMEASURED(x)` | No safe direction exists, so no guess can be made safe. | **Yes** |
+The gauntlet's one real idea is that **load duration picks the allowable**:
 
-The validator prints all 8 bounds in use on every run, each with its safety
-argument, so a bound can never quietly become a fact months later.
+- **Sustained** members hold load for days at 55 °C. Creep governs: short-term
+  strength knocked down for temperature and duration, then ÷5.
+- **Transient** members are loaded only while a hand is on them — the lever while
+  you close it, the hook during a knock. Yield governs, with ÷2.
 
-### What was searched for, and not found
+Applying the creep allowable to the lever would demand a 3× heavier lever for a
+load lasting four seconds. Applying the transient allowable to the link would be
+dangerous. It caught one genuine violation during the mass pass: the detent pocket
+left 1.20 mm of collar wall, under the 2.4 mm floor. `COLLAR_WALL` is now derived
+from the pocket depth so it cannot drift again.
 
-Sonos product/support pages, the Move 2 user guide, retailer spec tables,
-GrabCAD, STLFinder, Printables, MakerWorld, Thingiverse, Creality Cloud, FCC
-(model **RM044**), iFixit, and a dozen reviews.
+## Mass: 485 g against 400 g, and why I stopped there
 
-**Confirmed:** base is 0.15 kg, 15 V 3 A, 45 W detachable adapter, 2 m cable,
-and **indoor only**. It is a low-profile loop. The handle is a tapered recess
-with a hollow top, room for four fingers; the *Move 1* equivalent is ~60 mm deep.
+Mass is not in your priority list — the four priorities are doesn't drop, doesn't
+mar, survives an overnight, reads as a product — and "load path wins" is explicit.
+So I did a real reduction pass (576 → 485 g) and then stopped rather than thin
+anything the gauntlet checks.
 
-**Not published anywhere:** base footprint, height, contact-pad offsets, cable
-exit direction, handle recess width/depth/lip radius/lip height, and CoM. No
-Move 2 CAD exists publicly and there is no Move 2 teardown.
+What the pass actually did: band height 82 → 62.5 mm (it drives both shells *and*
+both TPU liners, ~2.9 g per mm across four parts), tray floor from a solid plate to
+a rib grid (192 → 87 g), hollow boom and root gusset, I-sectioned hook post, liner
+base 3.0 → 2.4 mm.
 
-## How the unknowns were designed around
+Three honest routes to the remaining 85 g, in order of value:
 
-**Pole → a range, taken up by shims.** There is no pole diameter variable. The
-design range is `62.0–65.0 mm` (2.44–2.56 in), the shells close on the **largest**
-end, and a printed shim set (0.5 / 1.0 / 1.5 mm, stacking to 3.0 mm) brings a
-smaller pole up to the bore. A shim only ever *adds* material between shell and
-pole, so a wrong guess about the pole makes the stack thicker, never looser.
-Changing the range means editing two numbers.
+1. **ASA instead of PETG** — removes the 1.174× wall multiplier outright. Worth
+   roughly 60–70 g and it fixes the UV problem too. Needs an enclosure.
+2. **Measure the two CoM numbers.** The boom arm is 148.9 mm because CoM is
+   *bounded* 20 mm forward and 135 mm up. Real values are almost certainly kinder,
+   and boom length cascades into band height, shells and liners.
+3. Accept 485 g. Nothing about it is unsafe; it is 85 g of conservatism.
 
-**Handle recess → a compliant, adjustable hook.** The hook stops depending on
-the recess. It is 36 mm wide — narrower than any four-finger recess can be — its
-nose is TPU so it conforms to whatever lip radius is actually there, and its
-height is set by the installer on a slotted M5 adjustment over a 140–205 mm
-range. Engagement becomes something you feel and lock, not something predicted.
+## What the unmeasured numbers cost
 
-**CoM → bounded to the adverse corner.** This is the one place a bound is as
-good as a measurement, because the CoM of a rigid body is physically confined
-inside its own envelope. It is placed at the corner producing the **largest**
-overturning and tip moments: 20 mm forward of centre (the long-lever direction)
-and 135 mm up (above the 95–125 mm expected). Reality will be kinder in every
-case. Cost: the boom, band and shells carry ~20–30 % more moment than the truth.
-Mass, not risk.
+| Unknown | How it was handled |
+|---|---|
+| Pole OD | Designed as a **range** (62–65 mm) with a printed shim set. A shim only ever adds material, so guessing wrong thickens the stack rather than loosening the grip. `pole_gauge_coupon` measures it at install. |
+| Handle recess ×4 | The hook stopped depending on it: 26 mm wide (any four-finger recess is wider), TPU nose that conforms to any lip radius, height set by the installer over 140–205 mm. |
+| CoM ×2 | Bounded to the adverse corner of the speaker's own envelope. Legitimate because a rigid body's CoM is physically confined inside it — reality is kinder in every case. Costs ~20% extra moment. |
+| Charging base ×6 | **Still blocks Module A.** No conservative direction exists: too small a canopy drips on 15 V indoor-rated electronics, too large fouls the bayonet. |
 
-**Charging base → gated separately.** These six have *no* conservative
-direction: a canopy that misses the real footprint drips on 15 V electronics
-Sonos rates indoor only. So they still block — but they block **Module A alone**.
-Module B, the right-angle USB-C plug retainer, needs none of them, which is
-exactly why the brief says build B first.
+`scripts/validate_params.py` prints all 8 bounds in use with the safety argument
+and the cost of each, every run, so a bound cannot quietly become a fact.
 
-## Current derived load path
+## Load path
 
-At the bounded adverse CoM, in PETG:
+Gravity does the work. The speaker sits upright **on** the tray and compresses into
+the base contacts; the body is never clamped. Anti-tip engages the moulded rear
+handle recess in **shear only**.
+
+The load runs boom → pad → band → pole. **Neither the hinge pin nor the lever link
+is in the suspended path** — they only close the band. That is why a failed lever
+releases the *clamp* rather than dropping the speaker.
+
+Secondary retention is independent: the tether's upper end chokes the **pole**
+above the clamp, not the clamp, so it still catches with the clamp fully open.
 
 | | |
 |---|---|
 | Suspended load | 30.9 N (3.15 kg) |
-| Boom length to CoM | 125.5 mm |
-| Overturning moment | 3.88 N·m |
-| Clamp band height | 88.0 mm |
-| Couple force (direct bearing) | 61 N |
+| Moment arm to bounded CoM | 148.9 mm |
+| Overturning moment | 4.60 N·m |
+| Band height | 62.5 mm |
 | Required friction preload | 343 N (5× anti-slip, μ = 0.45) |
-| Pole contact pressure | **0.025 MPa** vs 0.60 limit |
-| Worst tip moment | 1.43 N·m at −20° |
-| Worst hook shear | 10.6 N at −20° |
+| Link tension | 172 N continuous → **steel, not printed** |
+| Lever advantage | 4.46×, so 38 N of hand force |
+| Pole contact pressure | **0.035 MPa** vs a 0.60 limit |
+| Worst tip moment | 1.86 N·m at −20° |
 | Bayonet stack, worst case | +0.55 / −0.15 mm |
 
-Pole contact pressure is computed from the **friction preload**, not the couple.
-The couple is carried by direct bearing top-and-bottom and needs no friction;
-sizing pressure off it instead understates the number ~10× and produces a
-pole-marring check that cannot fail. The 0.025 MPa result is real and it is good
-news — an 88 mm band spreads 343 N very thinly.
+## Documents
 
-## PETG's cost, stated honestly
+- `docs/GATE0_MEASUREMENT_PROTOCOL.md` — the numbers, and which still block
+- `docs/HARDWARE_BOM.md` — every non-printed part, with grades and lengths
+- `docs/PRINT_SHEET.md` — generated from live geometry: mass, orientation, why
+- `docs/INSTALL_CARD.md` — two-motion install, one page
+- `docs/TETHER_SPEC.md` — cable, shock numbers, and why it bypasses the clamp
 
-PETG's sustained knockdown is 0.35 against ASA's 0.45. `derived.wall_scale()`
-turns that ratio into a **1.174× thickness multiplier** on every loaded section
-(√ of the allowable ratio, since bending capacity goes as t²). Shell wall
-4.69 mm, boom wall 4.23 mm. The mount gets heavier rather than weaker.
+## Two gates I cannot discharge here
 
-Two things PETG does not fix: UV is unmanaged, so sustained sun embrittles it —
-fine for an overnight, not for a season. And its layer bond *is* the strength
-here, so print hot and slow; a fast cold PETG part is a delamination waiting for
-a hot afternoon.
+**Physical gate.** Printing the pole-gauge and bayonet coupons and confirming fit
+on the actual pole needs the printer and the pole in hand. The coupons are built
+and are the first thing on the print sheet; the tolerance stack is *not* verified
+until you run them.
 
-## Load path
-
-Gravity does the work. The speaker sits **upright on** the tray and compresses
-into the base contacts. The body is never clamped. Anti-tip capture engages the
-moulded rear handle recess **in shear only**, never friction. Secondary
-retention is mandatory and independent: a captive steel tether that catches the
-speaker **with the clamp fully open**.
-
-## Layout
-
-| Path | What it is |
-|---|---|
-| `params/gate0.py` | The design envelope. Measured / bounded / blocking, with each bound's safety argument. |
-| `params/clearances.py` | One named variable per mating pair. No hardcoded gaps elsewhere. |
-| `params/derived.py` | Lazy arithmetic only. Valid at both ends of the pole range. |
-| `params/material.py` | Creep-governed allowables at 55 °C. Per-part material and print orientation. |
-| `scripts/validate_params.py` | Gate + plausibility + the bounds report. Exit 0/1/2. |
-| `tests/test_gate0.py` | 69 checks, including that the checks which should fail still can. |
-| `docs/GATE0_MEASUREMENT_PROTOCOL.md` | How to produce any number you choose to measure. |
-
-## Next
-
-1. **Geometry** — Module B path first: clamp shells, liner, shim set, lever and
-   link, bayonet collar, boom, tray, adjustable hook, USB-C retainer.
-2. **Failure critic** — per loaded part and on the assembly, at −20° pitch.
-3. **Aesthetic critic** — assembly only, blind A/B across five views.
-4. **Physical gate** — pole-gauge and bayonet coupons, fit confirmed on the
-   actual pole. Needs a printer and the pole in hand; cannot be discharged here.
-
-### Worth measuring even though nothing blocks on it
-
-The 4 handle-recess numbers and the 2 CoM numbers are **bounded, not required**.
-Measuring them would let the boom and clamp shed the 20–30 % conservatism they
-currently carry, which is real mass against the 400 g budget. The 6 base numbers
-are **required** before Module A can exist at all.
+**Aesthetic critic.** The brief asks for a blind A/B against unlabeled renders of
+commercial mounts across five views. I cannot execute that honestly in this
+environment: there is no renderer here, and I cannot view the commercial mount
+images the comparison depends on. `out/assembly.step` opens in any viewer — that
+judgement is yours, and I would rather hand you the model than fabricate a verdict.

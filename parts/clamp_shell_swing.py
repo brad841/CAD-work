@@ -5,9 +5,9 @@ Wraps the aft half of the pole. Carries no suspended load: it closes the band an
 generates preload, nothing else. Its single hinge knuckle lands between the fixed
 half's outer pair, which puts the pin in double shear rather than cantilevering it.
 
-At the lever parting line it carries the catch pin the over-centre link pulls
-against. That pin is loaded in pure tension through the link, so the boss around
-it is webbed back into the band the same way the hinge is.
+It also carries the lever pivot ears. The lever lives on this half so its 58 mm
+arm sweeps AFT into open air — on the fixed half it would swing forward straight
+into the bayonet collar.
 
 Print: pole axis normal to the plate, same as the fixed half — the hoop path is
 identical and so is the reason.
@@ -52,7 +52,6 @@ def build() -> Part:
     solid = _clamp.band(centre, arc)
 
     hinge_end = centre - arc / 2.0        # toward 0 deg / +X
-    lever_end = centre + arc / 2.0        # toward 180 deg / -X
 
     # --- Hinge: the single middle knuckle, in double shear ------------------
     z0, kh = middle_knuckle_span(band_h)
@@ -72,26 +71,24 @@ def build() -> Part:
         bore_d=pin_bore, axis_radius=_clamp.hinge_axis_radius(),
     )
 
-    # --- Catch pin boss for the over-centre link ----------------------------
-    # Sits between the fixed half's lever ears, so the link pulls symmetrically
-    # and the catch pin sees no bending couple.
-    catch_bore = L.CATCH_PIN_D + C.LEVER_PIN_TO_BORE
-    catch_h = L.LEVER_EAR_GAP - 2.0 * C.LEVER_PIN_TO_BORE
-    catch_z = (band_h - catch_h) / 2.0
-    solid = solid + _clamp.knuckle(
-        angle_deg=L.LEVER_DEG, z0=catch_z, height=catch_h,
-        radius=L.CATCH_BOSS_R, bore_d=catch_bore,
-        axis_radius=_clamp.lever_axis_radius(),
-    )
-    solid = solid + _clamp.knuckle_web(
-        angle_deg=lever_end, z0=catch_z, height=catch_h,
-        axis_radius=_clamp.lever_axis_radius(),
-        width=L.CATCH_BOSS_R * 2.0, toward_deg=centre,
-    )
-    solid = solid - _clamp.pin_bore_cutter(
-        angle_deg=L.LEVER_DEG, z0=catch_z - 1.0, height=catch_h + 2.0,
-        bore_d=catch_bore, axis_radius=_clamp.lever_axis_radius(),
-    )
+    # --- Lever pivot ears ---------------------------------------------------
+    ear_bore = L.LEVER_PIVOT_D + C.LEVER_PIN_TO_BORE
+    ear_z = (band_h - L.LEVER_EAR_GAP) / 2.0 - L.LEVER_EAR_W
+    for z0 in (ear_z, ear_z + L.LEVER_EAR_W + L.LEVER_EAR_GAP):
+        solid = solid + _clamp.knuckle(
+            angle_deg=L.LEVER_PIVOT_DEG, z0=z0, height=L.LEVER_EAR_W,
+            radius=L.LEVER_BOSS_R, bore_d=ear_bore,
+            axis_radius=_clamp.lever_axis_radius(),
+        )
+        solid = solid + _clamp.knuckle_web(
+            angle_deg=L.LEVER_PIVOT_DEG, z0=z0, height=L.LEVER_EAR_W,
+            axis_radius=_clamp.lever_axis_radius(),
+            width=L.LEVER_EAR_W,
+        )
+        solid = solid - _clamp.pin_bore_cutter(
+            angle_deg=L.LEVER_PIVOT_DEG, z0=z0 - 1.0, height=L.LEVER_EAR_W + 2.0,
+            bore_d=ear_bore, axis_radius=_clamp.lever_axis_radius(),
+        )
 
     return solid
 

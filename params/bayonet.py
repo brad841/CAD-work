@@ -49,8 +49,25 @@ DETENT_D = 4.0                  # sprung ball
 DETENT_POCKET_DEPTH = 3.2
 
 # --- Collar -----------------------------------------------------------------
-COLLAR_WALL = 6.0
-COLLAR_H = 26.0
+# DERIVED, not chosen. The blind detent pocket is sunk into this wall, so the
+# material left behind it is COLLAR_WALL - lug clearance - pocket depth. Choosing
+# 4.6 mm during a mass-lightening pass left 1.2 mm there — under the 2.4 mm floor,
+# and thin enough to be a water path into the joint. The gauntlet caught it.
+_MIN_WALL = 2.4
+COLLAR_WALL = DETENT_POCKET_DEPTH + C.BAYONET_LUG_RADIAL + _MIN_WALL
+COLLAR_H = 22.0
+# Flange that bolts to the clamp's pad. It is TANGENT to the ring, embedded a few
+# mm into it, not standing off on a gusset span: a standoff pushes the bayonet axis
+# further from the pole, and every mm of that is a mm of extra moment arm on the
+# whole assembly. It also put the mating face INSIDE the clamp band in the first
+# attempt, which is not a fit at all.
+COLLAR_FLANGE_T = 6.0
+COLLAR_FLANGE_EMBED = 3.0
+
+
+def flange_offset() -> float:
+    """Bayonet axis to the flange's mating face."""
+    return collar_od() / 2.0 - COLLAR_FLANGE_EMBED + COLLAR_FLANGE_T
 
 
 def collar_bore_d() -> float:

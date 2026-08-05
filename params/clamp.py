@@ -50,13 +50,64 @@ BOSS_CLEAR = 0.6                 # air between boss inner face and band OD
 HINGE_STANDOFF = HINGE_BOSS_R + BOSS_CLEAR
 
 # --- Lever ------------------------------------------------------------------
-LEVER_PIVOT_D = 4.0
-LEVER_EAR_W = 6.0
-LEVER_EAR_GAP = 14.0             # clear space between ears for the lever blade
+# The pivot and the catch must sit on OPPOSITE sides of the parting gap, each on
+# its own shell. Putting both at LEVER_DEG makes them coaxial, which is
+# geometrically degenerate: pivot_to_catch collapses toward zero and the required
+# link length goes NEGATIVE. An over-centre linkage needs a real base distance to
+# swing the crank through.
+#
+# Pivot goes just inside the FIXED shell's span, catch just inside the SWING
+# shell's. Each therefore stays clear of the other shell's band without relying
+# on any trim.
+# Which shell hosts which matters, and not for a subtle reason: the lever arm is
+# 58 mm long and sweeps in the plane of the band. With the pivot on the FIXED
+# (forward) side the arm swings toward 270 deg — straight into the bayonet collar,
+# 3.6 cm^3 of interference. Pivot on the SWING (aft) side and the arm sweeps aft
+# into open air.
+#
+# So: lever ears on the SWING half, catch pin on the FIXED half. The mechanism is
+# identical either way; only the swept volume differs.
+LEVER_PIVOT_DEG = LEVER_DEG - 24.0      # 156 deg, inside the SWING wrap
+CATCH_DEG = LEVER_DEG + 24.0            # 204 deg, inside the FIXED wrap
+# 24 deg, not 15: at 15 the pivot-to-catch chord is only 25 mm, and the crank has
+# to be longer than LEVER_BOSS_R + LINK_END_R (12.5 mm) or the link's end boss
+# intersects the lever's own pivot boss. A 13 mm crank then leaves too little
+# chord for a buildable link. Widening the spread fixes both at once.
+
+LEVER_PIVOT_D = 5.0        # M5 clevis pin, steel
+LEVER_EAR_W = 9.0
+# 9, not 6. At 6 mm the two ears give 60 mm^2 of bearing against the steel pivot
+# pin and the gauntlet put this at 1.10x — the weakest member in the assembly, and
+# it was bearing-on-plastic, the least forgiving kind of margin to run thin. The
+# band is 73 mm tall, so the width is free.
+LEVER_EAR_GAP = 20.0             # clear space between ears for the lever blade
 LEVER_BOSS_R = 6.0
-LEVER_STANDOFF = LEVER_BOSS_R + BOSS_CLEAR   # same reason as the hinge
+# Standoff has TWO drivers, and the second one is easy to miss. Besides keeping the
+# boss outboard of the band (as the hinge does), the axis must be far enough out
+# that the LINK — which runs as a chord between the pivot and the catch — clears
+# the band with its full width. The chord's closest approach to the pole axis is
+# r_axis * cos(offset), and half the strap sits inboard of that.
+#
+# At the boss-only standoff the link's inner edge sat 1.6 mm INSIDE the band OD.
+LINK_STRAP_W = 8.0          # must equal lever.LINK_W — asserted in tests
+LINK_BAND_CLEAR = 2.0
+
+
+def _lever_standoff() -> float:
+    from math import cos, radians
+    boss_driven = LEVER_BOSS_R + BOSS_CLEAR
+    # Solved from: r_axis*cos(offset) - LINK_STRAP_W/2 >= r_out + LINK_BAND_CLEAR
+    # expressed as a standoff, using the shell OD as the reference radius.
+    from . import derived as _D
+    d = _D.compute()
+    r_out = d.shell_bore_d / 2.0 + d.shell_wall_t
+    need_axis = (r_out + LINK_BAND_CLEAR + LINK_STRAP_W / 2.0) / cos(radians(24.0))
+    return max(boss_driven, need_axis - r_out)
+
+
+LEVER_STANDOFF = LEVER_BOSS_R + BOSS_CLEAR   # boss-driven floor; see lever_standoff()
 # The catch the link pulls against, on the swing half.
-CATCH_PIN_D = 4.0
+CATCH_PIN_D = 5.0
 CATCH_BOSS_R = 5.5
 
 # --- Boom / collar mounting pad ---------------------------------------------
@@ -83,6 +134,11 @@ LINER_LIP_H = 2.0                # small lip top and bottom so it cannot walk ou
 # --- Shim -------------------------------------------------------------------
 SHIM_WRAP_DEG = 150.0            # narrower than the liner; it only takes up slack
 SHIM_HEIGHT_FRACTION = 0.85      # of the band height, so it cannot foul the lips
+
+
+def lever_standoff() -> float:
+    """Lever axis standoff, whichever driver is larger. Lazy: needs derived."""
+    return _lever_standoff()
 
 
 def fixed_arc() -> tuple[float, float]:

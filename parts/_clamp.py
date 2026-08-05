@@ -71,7 +71,7 @@ def hinge_axis_radius() -> float:
 
 def lever_axis_radius() -> float:
     _, r_out = shell_radii()
-    return r_out + L.LEVER_STANDOFF
+    return r_out + L.lever_standoff()
 
 
 def knuckle(angle_deg: float, z0: float, height: float, radius: float,
@@ -151,8 +151,14 @@ def knuckle_web(angle_deg: float, z0: float, height: float,
         align=(Align.CENTER, keep_align, Align.CENTER),
     )
 
-    inboard = Cylinder(radius=r_out, height=height * 4.0,
-                       align=(Align.CENTER, Align.CENTER, Align.CENTER))
+    # Centred on THIS web's z range. Centring it at z=0 (the obvious mistake) means
+    # it does not reach a knuckle high up the band, so `web & inboard` is empty and
+    # `web - inboard` removes nothing — the web comes back fully untrimmed and its
+    # inboard half crosses into the other shell's band. That is exactly what the
+    # upper hinge web did, for 50 mm^3, while the lower one trimmed correctly.
+    inboard = Pos(0, 0, z0 + height / 2.0) * Cylinder(
+        radius=r_out, height=height * 4.0,
+        align=(Align.CENTER, Align.CENTER, Align.CENTER))
     web_inner = safe_and(safe_and(web, inboard), own_side)
     web_outer = web - inboard
 

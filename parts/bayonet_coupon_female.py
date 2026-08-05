@@ -28,70 +28,25 @@ from build123d import Align, Cylinder, Part, Pos, Rot  # noqa: E402
 
 from params import bayonet as B  # noqa: E402
 from params import clearances as C  # noqa: E402
-from parts import _base  # noqa: E402
+from parts import _base, _bayonet  # noqa: E402
 
 NAME = "bayonet_coupon_female"
 MATERIAL = "PETG"
 
 # Twist direction. Positive = counter-clockwise seen from above; the installer
 # reaches up and rotates the cradle toward themselves.
-TWIST_SIGN = +1.0
+TWIST_SIGN = _bayonet.TWIST_SIGN
 MOUTH_CHAMFER = 0.6
 
 
 def build() -> Part:
-    bore_r = B.collar_bore_d() / 2.0
-    od_r = B.collar_od() / 2.0
-    lug_r = bore_r + B.LUG_RADIAL + C.BAYONET_LUG_RADIAL
+    """The production collar ring, unmodified, with a mouth chamfer.
 
-    solid = Cylinder(
-        radius=od_r, height=B.COLLAR_H,
-        align=(Align.CENTER, Align.CENTER, Align.MIN),
-    ) - Cylinder(
-        radius=bore_r, height=B.COLLAR_H * 3,
-        align=(Align.CENTER, Align.CENTER, Align.CENTER),
-    )
+    Body geometry comes from parts/_bayonet.collar_ring() — the same code the
+    production collar uses — so a coupon that fits proves the real part fits.
+    """
+    solid = _bayonet.collar_ring()
 
-    z_floor = B.groove_bottom_z()
-    slot_arc = B.slot_arc_deg()
-    travel = B.travel_arc_deg()
-
-    for ang in B.lug_angles():
-        # Axial entry slot: from the groove floor up through the top face.
-        entry = _base.sector(
-            r_outer=lug_r, r_inner=bore_r - 0.5,
-            height=B.COLLAR_H - z_floor + 1.0,
-            centre_deg=ang, arc_deg=slot_arc,
-        )
-        solid = solid - (Pos(0, 0, z_floor) * entry)
-
-        # Circumferential groove: sweeps from the entry slot through the twist
-        # plus overtravel. Centred so one flank stays coincident with the entry
-        # slot and the sweep runs only in the twist direction.
-        groove_arc = slot_arc + travel
-        groove_centre = ang + TWIST_SIGN * travel / 2.0
-        groove = _base.sector(
-            r_outer=lug_r, r_inner=bore_r - 0.5,
-            height=B.groove_height(),
-            centre_deg=groove_centre, arc_deg=groove_arc,
-        )
-        solid = solid - (Pos(0, 0, z_floor) * groove)
-
-        # Detent spring pocket, radial, at the end of travel. The collar carries
-        # the spring and ball; the spigot's lug carries the seat. Blind pocket —
-        # it must not break through to the outside, or it becomes a water path.
-        det_ang = ang + TWIST_SIGN * B.TWIST_DEG
-        pocket = Cylinder(
-            radius=B.DETENT_D / 2.0, height=B.DETENT_POCKET_DEPTH,
-            align=(Align.CENTER, Align.CENTER, Align.MIN),
-            rotation=(0, -90, 0),
-        )
-        pocket = Rot(0, 0, det_ang) * (
-            Pos(lug_r, 0, z_floor + B.groove_height() / 2.0) * pocket
-        )
-        solid = solid - pocket
-
-    # Mouth chamfer on the slot entries so the lugs find the slots by feel.
     top_edges = [e for e in solid.edges()
                  if abs(e.center().Z - B.COLLAR_H) < 0.01]
     if not top_edges:
@@ -100,8 +55,6 @@ def build() -> Part:
         solid = solid.chamfer(length=MOUTH_CHAMFER, length2=None,
                               edge_list=top_edges)
     except Exception:  # noqa: BLE001
-        # Retry on the bore rim alone. Stated, not silently dropped — a collar
-        # with no lead-in is harder to mate blind and that is worth knowing.
         rim = [e for e in top_edges
                if abs((e.center().X ** 2 + e.center().Y ** 2) ** 0.5) < 1.0]
         if rim:
@@ -114,14 +67,7 @@ def build() -> Part:
 
 
 def wall_after_pocket() -> float:
-    """Material left between the detent pocket floor and the outside surface.
-
-    A blind pocket that nearly breaks through is a leak and a weak spot, so this
-    is checked rather than assumed.
-    """
-    bore_r = B.collar_bore_d() / 2.0
-    lug_r = bore_r + B.LUG_RADIAL + C.BAYONET_LUG_RADIAL
-    return B.collar_od() / 2.0 - (lug_r + B.DETENT_POCKET_DEPTH)
+    return _bayonet.wall_behind_pocket()
 
 
 if __name__ == "__main__":

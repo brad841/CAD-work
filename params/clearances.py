@@ -71,6 +71,14 @@ DETENT_PRELOAD_CRUSH = -0.30      # spring pocket depth vs free length
 # The tray locates the speaker; gravity holds it. These are locating gaps, not
 # grip. Generous, because a cold wet speaker still has to drop in one-handed.
 TRAY_TO_SPEAKER_FOOTPRINT = 1.0
+# Air between the speaker's rear face and the clamp's outer surface. Not cosmetic:
+# without it the derived boom length puts the speaker's back INSIDE the clamp
+# band, and the moment arm is understated by however much it overlaps. Knuckles
+# and the tether lug stand proud of the band, so this clears the tallest of them.
+SPEAKER_TO_CLAMP = 24.0
+# 24, not 8. The driver is NOT the speaker: it is the tray's aft hook-mount pad,
+# which stands ~14 mm proud of the speaker's rear face, having to clear the clamp's
+# forward boom pad. At 8 mm the tray fouled the clamp by 1.7 cm^3.
 # The hook engages the moulded handle lip in shear. Small gap: this is the
 # anti-tip path and slack becomes tip-over travel.
 HOOK_TO_HANDLE_LIP = 0.35

@@ -9,7 +9,7 @@ the lever releases the CLAMP, and the tether catches the cradle.
 
 Carries:
   - two hinge knuckles (outer pair) at the hinge parting line
-  - the lever pivot ears at the lever parting line
+  - the over-centre catch pin boss (the lever itself rides the swing half)
   - the boom / bayonet-collar mounting pad with four M5 heat-set bosses
   - the tether anchor, in the band wall rather than on any mechanism
 
@@ -50,7 +50,6 @@ def build() -> Part:
 
     # Parting-line angles: the ends of this shell's wrap.
     hinge_end = centre + arc / 2.0        # toward 0 deg / +X
-    lever_end = centre - arc / 2.0        # toward 180 deg / -X
 
     # --- Hinge: outer knuckle pair -----------------------------------------
     kh = band_h * OUTER_KNUCKLE_FRACTION
@@ -72,24 +71,26 @@ def build() -> Part:
             bore_d=pin_bore, axis_radius=_clamp.hinge_axis_radius(),
         )
 
-    # --- Lever pivot ears ---------------------------------------------------
-    ear_bore = L.LEVER_PIVOT_D + C.LEVER_PIN_TO_BORE
-    ear_z = (band_h - L.LEVER_EAR_GAP) / 2.0 - L.LEVER_EAR_W
-    for z0 in (ear_z, ear_z + L.LEVER_EAR_W + L.LEVER_EAR_GAP):
-        solid = solid + _clamp.knuckle(
-            angle_deg=L.LEVER_DEG, z0=z0, height=L.LEVER_EAR_W,
-            radius=L.LEVER_BOSS_R, bore_d=ear_bore,
-            axis_radius=_clamp.lever_axis_radius(),
-        )
-        solid = solid + _clamp.knuckle_web(
-            angle_deg=lever_end, z0=z0, height=L.LEVER_EAR_W,
-            axis_radius=_clamp.lever_axis_radius(),
-            width=L.LEVER_EAR_W, toward_deg=centre,
-        )
-        solid = solid - _clamp.pin_bore_cutter(
-            angle_deg=L.LEVER_DEG, z0=z0 - 1.0, height=L.LEVER_EAR_W + 2.0,
-            bore_d=ear_bore, axis_radius=_clamp.lever_axis_radius(),
-        )
+    # --- Catch pin boss for the over-centre link ----------------------------
+    # Sits between the lever ears on the other half, so the link pulls
+    # symmetrically and the catch pin sees no bending couple.
+    catch_bore = L.CATCH_PIN_D + C.LEVER_PIN_TO_BORE
+    catch_h = L.LEVER_EAR_GAP - 2.0 * C.LEVER_PIN_TO_BORE
+    catch_z = (band_h - catch_h) / 2.0
+    solid = solid + _clamp.knuckle(
+        angle_deg=L.CATCH_DEG, z0=catch_z, height=catch_h,
+        radius=L.CATCH_BOSS_R, bore_d=catch_bore,
+        axis_radius=_clamp.lever_axis_radius(),
+    )
+    solid = solid + _clamp.knuckle_web(
+        angle_deg=L.CATCH_DEG, z0=catch_z, height=catch_h,
+        axis_radius=_clamp.lever_axis_radius(),
+        width=L.CATCH_BOSS_R * 2.0,
+    )
+    solid = solid - _clamp.pin_bore_cutter(
+        angle_deg=L.CATCH_DEG, z0=catch_z - 1.0, height=catch_h + 2.0,
+        bore_d=catch_bore, axis_radius=_clamp.lever_axis_radius(),
+    )
 
     # --- Boom pad and tether anchor ----------------------------------------
     solid = solid + _clamp.boom_pad()

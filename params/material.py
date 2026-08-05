@@ -140,16 +140,18 @@ PART_SPEC: dict[str, dict[str, str]] = {
                "flat face against the plate becomes the show face.",
     },
     "lever_link": {
-        "material": "PETG",
-        "orientation": "Flat on the plate, both pin axes vertical.",
-        "why": "Pure tension between two pins, held in-plane.",
+        "material": "steel",
+        "orientation": "NOT PRINTED — 3 mm steel plate, laser-cut profile.",
+        "why": "172 N of sustained tension. A printed link reaches only ~1.5x on "
+               "the derated allowable and its pin bearing already exceeds the "
+               "sustained tensile limit. Steel gives 21x at 8 g.",
     },
     "pole_liner": {
         "material": "TPU 95A",
         "orientation": "Pole axis normal to the plate.",
         "why": "Compression only; orientation chosen for print reliability.",
     },
-    "boom_arm": {
+    "cradle_boom": {
         "material": "PETG",
         "orientation": "Long axis flat on the plate. Never standing up.",
         "why": "Axial tension and bending both in-plane. Standing it up would "
@@ -193,6 +195,22 @@ PART_SPEC: dict[str, dict[str, str]] = {
         "why": "The compliant face that meets the handle lip. TPU because the "
                "lip radius is unpublished — the nose conforms to whatever is "
                "actually there instead of matching a number we never got.",
+    },
+    "pole_gauge_coupon": {
+        "material": "PETG",
+        "orientation": "Axis normal to the plate — same as the clamp shells.",
+        "why": "This coupon is only honest if printed the way the shells will be, "
+               "so its bore reflects the same dimensional behaviour.",
+    },
+    "bayonet_coupon_male": {
+        "material": "PETG",
+        "orientation": "Bayonet axis normal to the plate.",
+        "why": "Same as the production spigot, so the coupon tests the real joint.",
+    },
+    "bayonet_coupon_female": {
+        "material": "PETG",
+        "orientation": "Bayonet axis normal to the plate.",
+        "why": "Same as the production collar.",
     },
     "usbc_retainer": {
         "material": "PETG",

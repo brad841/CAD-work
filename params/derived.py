@@ -50,11 +50,14 @@ class Derived:
     # Load path, at the bounded adverse CoM
     load_n: float
     boom_length: float
+    collar_axis_offset: float
+    boom_reach: float
     overturning_moment_nmm: float
     clamp_band_height: float
     clamp_couple_arm: float
     clamp_couple_n: float
     required_preload_n: float
+    link_tension_n: float
     pole_contact_area_mm2: float
     pole_contact_pressure_mpa: float
 
@@ -95,7 +98,9 @@ def compute(material: M.Material = M.PETG) -> Derived:
     pole_range = od_max - od_min
 
     # --- Clamp geometry, valid at both ends of the range -------------------
-    liner_thickness = 3.0 + G.POLE_SEAM_PROUD + C.LINER_SEAM_RELIEF
+    # 2.4 mm of TPU is ample to spread 0.03 MPa into a coating; the rest of this
+    # is seam relief, which is bounded generously on purpose.
+    liner_thickness = 2.4 + G.POLE_SEAM_PROUD + C.LINER_SEAM_RELIEF
 
     # Liner free-state bore, sized to the SMALL end of the pole range so it is
     # preloaded even on the thinnest pole in the design range. LINER_TO_POLE is
@@ -118,14 +123,30 @@ def compute(material: M.Material = M.PETG) -> Derived:
     shell_wall_t = max(M.MIN_WALL_LOADED_MM, 4.0 * scale)
     boom_wall_t = max(M.MIN_WALL_LOADED_MM, 3.6 * scale)
 
-    # Boom reaches from pole surface to the CoM in plan. COM_OFFSET_Y is bounded
-    # negative (forward, away from the pole), which lengthens this lever — the
-    # adverse direction, deliberately.
+    # Moment arm from the POLE axis to the bounded CoM.
+    #
+    # An earlier version omitted SPEAKER_TO_CLAMP, which put the speaker's rear
+    # face exactly on the clamp OD — touching the knuckles and the tether lug, and
+    # understating the arm by the overlap. The clearance is now explicit and named.
+    #
+    # COM_OFFSET_Y is bounded negative (forward, away from the pole), which
+    # lengthens this lever: the adverse direction, deliberately.
+    shell_od = shell_bore_d / 2.0 + shell_wall_t
     boom_length = (
-        shell_bore_d / 2.0 + shell_wall_t
+        shell_od + C.SPEAKER_TO_CLAMP
         + G.SPEAKER_D / 2.0
         - G.COM_OFFSET_Y
     )
+
+    # Where the bayonet axis lands. The collar bolts flat to the shell pad, so its
+    # axis cannot sit closer than its own radius plus air — this is geometry, not
+    # a choice. The tray then sits OVER this axis rather than beyond it, which is
+    # what keeps the boom short and the spigot's own bending small.
+    from . import bayonet as BY
+    from . import clamp as CL
+    pad_face = shell_od + CL.PAD_T - 0.5
+    collar_axis_offset = pad_face + BY.flange_offset()
+    boom_reach = (shell_od + C.SPEAKER_TO_CLAMP + G.SPEAKER_D / 2.0) - collar_axis_offset
 
     overturning_moment = load_n * boom_length
 
@@ -137,11 +158,16 @@ def compute(material: M.Material = M.PETG) -> Derived:
     # height buys almost nothing for pole protection and the floor was just
     # carrying mass — 88 mm of TPU liner, twice over.
     #
-    # What actually sets it is the couple arm's ratio to the boom lever: a band
-    # much shorter than the boom is long makes the shells splay rather than bear.
-    # 0.55 of boom length is that relationship, and the 70 mm floor keeps the
-    # clamp reading as a wrapped sleeve rather than a narrow ring.
-    clamp_band_height = max(70.0, boom_length * 0.55)
+    # What remains is a proportion decision inside retained margins, and it is
+    # stated as one rather than dressed up as a derivation: band hoop tension runs
+    # at ~7x and pole contact pressure at ~22x, so height is not strength-limited
+    # here. It is limited by (a) keeping the clamp reading as a wrapped sleeve
+    # rather than a narrow ring, and (b) mass — the band drives BOTH shells and
+    # BOTH TPU liners, so every mm costs about 2.9 g across four parts.
+    #
+    # 0.42 and a 60 mm floor. The gauntlet re-checks hoop and pressure after any
+    # change here, so this cannot be quietly cut past the point where it matters.
+    clamp_band_height = max(60.0, boom_length * 0.42)
     clamp_couple_arm = clamp_band_height * 0.72
     clamp_couple_n = overturning_moment / clamp_couple_arm
 
@@ -157,6 +183,11 @@ def compute(material: M.Material = M.PETG) -> Derived:
     required_preload_n = (
         M.SUSTAINED_MARGIN_REQUIRED * load_n / C.LINER_FRICTION_COEFF
     )
+
+    # Band mechanics: for a band at tension T wrapping a cylinder, the integrated
+    # normal force over a 180 deg wrap is 2T. Two shells, one hinge and one link,
+    # so the link carries half the total normal requirement.
+    link_tension_n = required_preload_n / 2.0
 
     # Preload spreads over the liner wrap: two shells, ~40% of circumference
     # each, full band height. Computed at the SMALL end of the pole range, where
@@ -202,11 +233,14 @@ def compute(material: M.Material = M.PETG) -> Derived:
         shim_range_covered=shim_range_covered,
         load_n=load_n,
         boom_length=boom_length,
+        collar_axis_offset=collar_axis_offset,
+        boom_reach=boom_reach,
         overturning_moment_nmm=overturning_moment,
         clamp_band_height=clamp_band_height,
         clamp_couple_arm=clamp_couple_arm,
         clamp_couple_n=clamp_couple_n,
         required_preload_n=required_preload_n,
+        link_tension_n=link_tension_n,
         pole_contact_area_mm2=pole_contact_area_mm2,
         pole_contact_pressure_mpa=pole_contact_pressure_mpa,
         wall_scale=scale,

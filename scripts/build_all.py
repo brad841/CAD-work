@@ -31,6 +31,14 @@ PART_MODULES = [
     "pole_liner",
     "clamp_shell_fixed",
     "clamp_shell_swing",
+    "over_center_lever",
+    "lever_link",
+    "bayonet_collar",
+    "cradle_boom",
+    "tray",
+    "rear_handle_hook",
+    "hook_nose",
+    "usbc_retainer",
 ]
 
 # Parts generated as a set from one module, with a per-variant argument.
@@ -44,6 +52,15 @@ PART_SETS = [
 QTY = {
     "pole_liner": 2,
 }
+
+# Shims are pick-what-fits from the printed set, not all three at once. Counted
+# separately so the budget is not inflated by two shims that will never be used.
+SHIM_PREFIX = "pole_shim"
+
+# Not printed. Steel hardware whose STEP is a cutting profile, so it does not
+# count against a PRINTED mass budget — but it is reported so the total mass of
+# the thing hanging on the pole is still visible.
+NOT_PRINTED = {"lever_link"}
 
 
 def main() -> int:
@@ -88,8 +105,15 @@ def main() -> int:
     # rather than quietly excluded.
     coupon_mass = sum(r.mass_g * QTY.get(r.name, 1)
                       for r in reports if "coupon" in r.name)
-    mount_mass = total - coupon_mass
+    steel_mass = sum(r.mass_g for r in reports if r.name in NOT_PRINTED)
+    shims = [r for r in reports if r.name.startswith(SHIM_PREFIX)]
+    shim_all = sum(r.mass_g for r in shims)
+    shim_worst = max((r.mass_g for r in shims), default=0.0) * 1.0
+    mount_mass = total - coupon_mass - steel_mass - shim_all + shim_worst
     print(f"  {'of which coupons':<24} {'':<9} {coupon_mass:>7.1f} g  (consumable)")
+    print(f"  {'of which steel (not printed)':<24} {'':<9} {steel_mass:>7.1f} g")
+    print(f"  {'shims: worst single stack':<24} {'':<9} {shim_worst:>7.1f} g  "
+          f"(of {shim_all:.1f} g printed as a set)")
     print(f"  {'mount parts':<24} {'':<9} {mount_mass:>7.1f} g  "
           f"of {G.PRINTED_MASS_BUDGET:.0f} g budget")
 
