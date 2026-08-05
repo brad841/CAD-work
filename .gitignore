@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+build/
+out/
+*.stl
+*.3mf
+*.gcode
+# STEP files are deliverables and ARE committed — see out/ policy in README.
